@@ -8,17 +8,19 @@ import (
 	"net/url"
 	"strconv"
 
-	motmedelErrors "github.com/Motmedel/utils_go/pkg/errors"
-	"github.com/Motmedel/utils_go/pkg/errors/types/empty_error"
-	motmedelHttpErrors "github.com/Motmedel/utils_go/pkg/http/errors"
-	"github.com/Motmedel/utils_go/pkg/http/types/fetch_config"
-	motmedelHttpUtils "github.com/Motmedel/utils_go/pkg/http/utils"
+	altshiftErrors "github.com/altshiftab/utils_go/pkg/errors"
+	"github.com/altshiftab/utils_go/pkg/errors/types/empty_error"
+	motmedelHttpErrors "github.com/altshiftab/utils_go/pkg/http/errors"
+	"github.com/altshiftab/utils_go/pkg/http/types/fetch_config"
+	motmedelHttpUtils "github.com/altshiftab/utils_go/pkg/http/utils"
 
 	"github.com/Motmedel/github_osint/pkg/github/github_config"
 	"github.com/Motmedel/github_osint/pkg/github/types/branch"
 	"github.com/Motmedel/github_osint/pkg/github/types/commit"
 	"github.com/Motmedel/github_osint/pkg/github/types/repository"
 )
+
+const perPageParameter = "per_page"
 
 const MaxNumResultsPerPage = 100
 
@@ -46,7 +48,7 @@ func NewClientWithBaseUrl(baseUrl *url.URL, options ...github_config.Option) *Cl
 // ListRepositories fetches all repositories for a given username, handling pagination.
 func (c *Client) ListRepositories(ctx context.Context, username string, options ...fetch_config.Option) ([]*repository.Repository, error) {
 	if username == "" {
-		return nil, motmedelErrors.NewWithTrace(empty_error.New("username"))
+		return nil, altshiftErrors.NewWithTrace(empty_error.New("username"))
 	}
 
 	if err := ctx.Err(); err != nil {
@@ -59,15 +61,15 @@ func (c *Client) ListRepositories(ctx context.Context, username string, options 
 		u := *c.baseUrl
 		u.Path += "users/" + url.PathEscape(username) + "/repos"
 		u.RawQuery = url.Values{
-			"per_page": {strconv.Itoa(MaxNumResultsPerPage)},
-			"page":     {strconv.Itoa(pageNumber)},
+			perPageParameter: {strconv.Itoa(MaxNumResultsPerPage)},
+			"page":           {strconv.Itoa(pageNumber)},
 		}.Encode()
 		urlString := u.String()
 
 		fetchOptions := append(c.config.FetchOptions, options...)
 		_, repositories, err := motmedelHttpUtils.FetchJson[[]*repository.Repository](ctx, urlString, fetchOptions...)
 		if err != nil {
-			return nil, motmedelErrors.New(fmt.Errorf("fetch json: %w", err), urlString)
+			return nil, altshiftErrors.New(fmt.Errorf("fetch json: %w", err), urlString)
 		}
 
 		allRepositories = append(allRepositories, repositories...)
@@ -83,7 +85,7 @@ func (c *Client) ListRepositories(ctx context.Context, username string, options 
 // ListBranches fetches all branch names for a given repository, handling pagination.
 func (c *Client) ListBranches(ctx context.Context, fullName string, options ...fetch_config.Option) ([]*branch.Branch, error) {
 	if fullName == "" {
-		return nil, motmedelErrors.NewWithTrace(empty_error.New("full name"))
+		return nil, altshiftErrors.NewWithTrace(empty_error.New("full name"))
 	}
 
 	if err := ctx.Err(); err != nil {
@@ -96,15 +98,15 @@ func (c *Client) ListBranches(ctx context.Context, fullName string, options ...f
 		u := *c.baseUrl
 		u.Path += "repos/" + fullName + "/branches"
 		u.RawQuery = url.Values{
-			"per_page": {strconv.Itoa(MaxNumResultsPerPage)},
-			"page":     {strconv.Itoa(pageNumber)},
+			perPageParameter: {strconv.Itoa(MaxNumResultsPerPage)},
+			"page":           {strconv.Itoa(pageNumber)},
 		}.Encode()
 		urlString := u.String()
 
 		fetchOptions := append(c.config.FetchOptions, options...)
 		_, branches, err := motmedelHttpUtils.FetchJson[[]*branch.Branch](ctx, urlString, fetchOptions...)
 		if err != nil {
-			return nil, motmedelErrors.New(fmt.Errorf("fetch json: %w", err), urlString)
+			return nil, altshiftErrors.New(fmt.Errorf("fetch json: %w", err), urlString)
 		}
 
 		allBranches = append(allBranches, branches...)
@@ -122,10 +124,10 @@ func (c *Client) ListBranches(ctx context.Context, fullName string, options ...f
 // Returns nil, nil if the repository has no commits (HTTP 409).
 func (c *Client) ListCommits(ctx context.Context, fullName string, branchName string, since string, options ...fetch_config.Option) ([]*commit.Commit, error) {
 	if fullName == "" {
-		return nil, motmedelErrors.NewWithTrace(empty_error.New("full name"))
+		return nil, altshiftErrors.NewWithTrace(empty_error.New("full name"))
 	}
 	if branchName == "" {
-		return nil, motmedelErrors.NewWithTrace(empty_error.New("branch name"))
+		return nil, altshiftErrors.NewWithTrace(empty_error.New("branch name"))
 	}
 
 	if err := ctx.Err(); err != nil {
@@ -139,9 +141,9 @@ func (c *Client) ListCommits(ctx context.Context, fullName string, branchName st
 		u.Path += "repos/" + fullName + "/commits"
 
 		query := url.Values{
-			"per_page": {strconv.Itoa(MaxNumResultsPerPage)},
-			"page":     {strconv.Itoa(pageNumber)},
-			"sha":      {branchName},
+			perPageParameter: {strconv.Itoa(MaxNumResultsPerPage)},
+			"page":           {strconv.Itoa(pageNumber)},
+			"sha":            {branchName},
 		}
 		if since != "" {
 			query.Set("since", since)
@@ -155,7 +157,7 @@ func (c *Client) ListCommits(ctx context.Context, fullName string, branchName st
 
 		response, commits, err := motmedelHttpUtils.FetchJson[[]*commit.Commit](ctx, urlString, fetchOptions...)
 		if err != nil {
-			return nil, motmedelErrors.New(fmt.Errorf("fetch json: %w", err), urlString)
+			return nil, altshiftErrors.New(fmt.Errorf("fetch json: %w", err), urlString)
 		}
 
 		// HTTP 409 means the repository has no commits.
@@ -164,7 +166,7 @@ func (c *Client) ListCommits(ctx context.Context, fullName string, branchName st
 		}
 
 		if response != nil && response.StatusCode/100 != 2 {
-			return nil, motmedelErrors.New(
+			return nil, altshiftErrors.New(
 				&motmedelHttpErrors.Non2xxStatusCodeError{StatusCode: response.StatusCode},
 				urlString,
 			)

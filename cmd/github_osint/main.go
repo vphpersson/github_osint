@@ -10,15 +10,14 @@ import (
 	"strings"
 	"sync"
 
-	motmedelErrors "github.com/Motmedel/utils_go/pkg/errors"
-	"github.com/Motmedel/utils_go/pkg/http/types/fetch_config"
-	"github.com/Motmedel/utils_go/pkg/http/types/fetch_config/retry_config"
-	motmedelHttpLog "github.com/Motmedel/utils_go/pkg/log"
-	motmedelLog "github.com/Motmedel/utils_go/pkg/log"
-	motmedelErrorLogger "github.com/Motmedel/utils_go/pkg/log/error_logger"
-	"github.com/vphpersson/argument_parser/pkg/argument_parser"
-	argumentParserErrors "github.com/vphpersson/argument_parser/pkg/errors"
-	"github.com/vphpersson/argument_parser/pkg/types/option"
+	argument_parser "github.com/altshiftab/utils_go/pkg/cli/argument_parser"
+	argumentParserErrors "github.com/altshiftab/utils_go/pkg/cli/argument_parser/errors"
+	"github.com/altshiftab/utils_go/pkg/cli/argument_parser/option"
+	altshiftErrors "github.com/altshiftab/utils_go/pkg/errors"
+	"github.com/altshiftab/utils_go/pkg/http/types/fetch_config"
+	"github.com/altshiftab/utils_go/pkg/http/types/fetch_config/retry_config"
+	altshiftLog "github.com/altshiftab/utils_go/pkg/log"
+	altshiftErrorLogger "github.com/altshiftab/utils_go/pkg/log/error_logger"
 
 	"github.com/Motmedel/github_osint/pkg/github"
 	"github.com/Motmedel/github_osint/pkg/github/github_config"
@@ -97,17 +96,17 @@ func extractAuthor(c *commit.Commit) *CommitAuthor {
 }
 
 func main() {
-	logger := &motmedelErrorLogger.Logger{
+	logger := &altshiftErrorLogger.Logger{
 		Logger: slog.New(
-			&motmedelLog.ContextHandler{
+			&altshiftLog.ContextHandler{
 				Next: slog.NewJSONHandler(
 					os.Stderr,
 					&slog.HandlerOptions{AddSource: false, Level: slog.LevelInfo},
 				),
-				Extractors: []motmedelLog.ContextExtractor{
-					&motmedelLog.ErrorContextExtractor{
-						ContextExtractors: []motmedelLog.ContextExtractor{
-							&motmedelHttpLog.ErrorContextExtractor{},
+				Extractors: []altshiftLog.ContextExtractor{
+					&altshiftLog.ErrorContextExtractor{
+						ContextExtractors: []altshiftLog.ContextExtractor{
+							&altshiftLog.ErrorContextExtractor{},
 						},
 					},
 				},
@@ -139,7 +138,7 @@ func main() {
 		}
 		logger.FatalWithExitingMessage(
 			"An error occurred when parsing arguments.",
-			motmedelErrors.New(fmt.Errorf("parse: %w", err)),
+			altshiftErrors.New(fmt.Errorf("parse: %w", err)),
 		)
 	}
 
@@ -164,7 +163,7 @@ func main() {
 	if err != nil {
 		logger.FatalWithExitingMessage(
 			"An error occurred when listing repositories.",
-			motmedelErrors.New(fmt.Errorf("list repositories: %w", err), repoUser),
+			altshiftErrors.New(fmt.Errorf("list repositories: %w", err), repoUser),
 		)
 	}
 
@@ -178,7 +177,7 @@ func main() {
 			if err != nil {
 				logger.ErrorWithSkippingMessage(
 					fmt.Sprintf("An error occurred when processing repository %s.", repo.FullName),
-					motmedelErrors.New(fmt.Errorf("process repository: %w", err), repo.FullName),
+					altshiftErrors.New(fmt.Errorf("process repository: %w", err), repo.FullName),
 				)
 				return
 			}
