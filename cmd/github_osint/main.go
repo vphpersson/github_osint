@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"slices"
 	"strings"
@@ -14,6 +15,7 @@ import (
 	argumentParserErrors "github.com/altshiftab/utils_go/pkg/cli/argument_parser/errors"
 	"github.com/altshiftab/utils_go/pkg/cli/argument_parser/option"
 	altshiftErrors "github.com/altshiftab/utils_go/pkg/errors"
+	altshiftHttpErrors "github.com/altshiftab/utils_go/pkg/http/errors"
 	"github.com/altshiftab/utils_go/pkg/http/types/fetch_config"
 	"github.com/altshiftab/utils_go/pkg/http/types/fetch_config/retry_config"
 	altshiftLog "github.com/altshiftab/utils_go/pkg/log"
@@ -93,6 +95,15 @@ func extractAuthor(c *commit.Commit) *CommitAuthor {
 		Name:         c.Commit.Author.Name,
 		EmailAddress: c.Commit.Author.Email,
 	}
+}
+
+// isBlockedRepository reports whether err stems from GitHub refusing to serve a repository at all, which it answers
+// with 451 and does e.g. after a DMCA takedown. Such a repository is still listed among the owner's repositories, so
+// nothing can be collected from it and it is not an error on part of the caller.
+func isBlockedRepository(err error) bool {
+	statusCodeError, ok := errors.AsType[*altshiftHttpErrors.Non2xxStatusCodeError](err)
+
+	return ok && statusCodeError.StatusCode == http.StatusUnavailableForLegalReasons
 }
 
 func main() {
@@ -175,6 +186,11 @@ func main() {
 		wg.Go(func() {
 			repoInfo, err := processRepository(ctx, client, repo)
 			if err != nil {
+				if isBlockedRepository(err) {
+					slog.Warn("Access to the repository is blocked. Skipping.", "repository", repo.FullName)
+					return
+				}
+
 				logger.ErrorWithSkippingMessage(
 					fmt.Sprintf("An error occurred when processing repository %s.", repo.FullName),
 					altshiftErrors.New(fmt.Errorf("process repository: %w", err), repo.FullName),
