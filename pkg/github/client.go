@@ -10,9 +10,9 @@ import (
 
 	altshiftErrors "github.com/altshiftab/utils_go/pkg/errors"
 	"github.com/altshiftab/utils_go/pkg/errors/types/empty_error"
-	motmedelHttpErrors "github.com/altshiftab/utils_go/pkg/http/errors"
+	altshiftHttpErrors "github.com/altshiftab/utils_go/pkg/http/errors"
 	"github.com/altshiftab/utils_go/pkg/http/types/fetch_config"
-	motmedelHttpUtils "github.com/altshiftab/utils_go/pkg/http/utils"
+	altshiftHttpUtils "github.com/altshiftab/utils_go/pkg/http/utils"
 
 	"github.com/Motmedel/github_osint/pkg/github/github_config"
 	"github.com/Motmedel/github_osint/pkg/github/types/branch"
@@ -67,7 +67,7 @@ func (c *Client) ListRepositories(ctx context.Context, username string, options 
 		urlString := u.String()
 
 		fetchOptions := append(c.config.FetchOptions, options...)
-		_, repositories, err := motmedelHttpUtils.FetchJson[[]*repository.Repository](ctx, urlString, fetchOptions...)
+		_, repositories, err := altshiftHttpUtils.FetchJson[[]*repository.Repository](ctx, urlString, fetchOptions...)
 		if err != nil {
 			return nil, altshiftErrors.New(fmt.Errorf("fetch json: %w", err), urlString)
 		}
@@ -104,7 +104,7 @@ func (c *Client) ListBranches(ctx context.Context, fullName string, options ...f
 		urlString := u.String()
 
 		fetchOptions := append(c.config.FetchOptions, options...)
-		_, branches, err := motmedelHttpUtils.FetchJson[[]*branch.Branch](ctx, urlString, fetchOptions...)
+		_, branches, err := altshiftHttpUtils.FetchJson[[]*branch.Branch](ctx, urlString, fetchOptions...)
 		if err != nil {
 			return nil, altshiftErrors.New(fmt.Errorf("fetch json: %w", err), urlString)
 		}
@@ -155,7 +155,7 @@ func (c *Client) ListCommits(ctx context.Context, fullName string, branchName st
 		fetchOptions := append(c.config.FetchOptions, options...)
 		fetchOptions = append(fetchOptions, fetch_config.WithSkipErrorOnStatus(true))
 
-		response, commits, err := motmedelHttpUtils.FetchJson[[]*commit.Commit](ctx, urlString, fetchOptions...)
+		response, commits, err := altshiftHttpUtils.FetchJson[[]*commit.Commit](ctx, urlString, fetchOptions...)
 		if err != nil {
 			return nil, altshiftErrors.New(fmt.Errorf("fetch json: %w", err), urlString)
 		}
@@ -167,7 +167,7 @@ func (c *Client) ListCommits(ctx context.Context, fullName string, branchName st
 
 		if response != nil && response.StatusCode/100 != 2 {
 			return nil, altshiftErrors.New(
-				&motmedelHttpErrors.Non2xxStatusCodeError{StatusCode: response.StatusCode},
+				&altshiftHttpErrors.Non2xxStatusCodeError{StatusCode: response.StatusCode},
 				urlString,
 			)
 		}
@@ -187,7 +187,7 @@ func (c *Client) ListCommits(ctx context.Context, fullName string, branchName st
 func (c *Client) ListRepositoriesIgnoreError(ctx context.Context, username string, options ...fetch_config.Option) ([]*repository.Repository, error) {
 	repositories, err := c.ListRepositories(ctx, username, options...)
 	if err != nil {
-		if errors.Is(err, motmedelHttpErrors.ErrNon2xxStatusCode) {
+		if errors.Is(err, altshiftHttpErrors.ErrNon2xxStatusCode) {
 			return nil, nil
 		}
 		return nil, err
